@@ -1,0 +1,33 @@
+version: "3.5"
+services:
+  nats_streaming:
+    image: nats-streaming:latest
+    ports:
+      - '127.0.0.1:4223:4222'
+      - '127.0.0.1:8223:8222'
+    networks:
+      - my_network
+
+  db:
+   build: "./postgresql"
+   restart: "always"
+   environment:
+        POSTGRES_DB: "test_db"
+        POSTGRES_USER: "testUser"
+        POSTGRES_PASSWORD: "password"
+ #   image: postgres:latest
+ #   environment:
+ #     POSTGRES_PASSWORD: password
+   ports:
+     - '127.0.0.1:5432:5432'
+   networks:
+    - my_network
+
+ # client:
+ #   build: './client/'
+ #   network_mode: host
+
+networks:
+  my_network:
+    driver: bridge
+
