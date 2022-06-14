@@ -1,36 +1,46 @@
 package store
 
 import (
-	"L0/internal/app/model"
 	"context"
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
+	"service/internal/app/model"
 )
 
-type PostgresRepo struct {
-	db *sql.DB
+type Store struct {
+	config *Config
+	db     *sql.DB
+	logger *logrus.Logger
+}
+
+func New(config *Config) *Store {
+	return &Store{
+		config: config,
+	}
 }
 
 //new postgres...
-func New(url string) (*PostgresRepo, error) {
-	db, err := sql.Open("postgres", url)
+func (r *Store) Open() error {
+	db, err := sql.Open("postgres", r.config.DBUrl)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("Open postgres: %v", err)
 	}
 	if err = db.Ping(); err != nil {
-		return nil, err
+		return fmt.Errorf("Ping postgres: %v", err)
 	}
-	return &PostgresRepo{db: db}, nil
+	r.db = db
+	return nil
 }
 
 //close db...
-func (r *PostgresRepo) Close() {
+func (r *Store) Close() {
 	r.db.Close()
 }
 
 //insert data...
-func (r *PostgresRepo) InsertData(ctx context.Context, order model.Order) error {
+func (r *Store) InsertData(ctx context.Context, order model.Order) error {
 
 	_, err := r.InsertDataOrder(ctx, order)
 	if err != nil {
@@ -58,7 +68,7 @@ func (r *PostgresRepo) InsertData(ctx context.Context, order model.Order) error 
 }
 
 //insert into order...
-func (r *PostgresRepo) InsertDataOrder(ctx context.Context, order model.Order) (int, error) {
+func (r *Store) InsertDataOrder(ctx context.Context, order model.Order) (int, error) {
 	//insert into order...
 	var id int
 	if err := r.db.QueryRowContext(ctx, "INSERT INTO orders(order_uid, track_number, entry, locale, internal_signature, customer_id, delivery_service, shardkey, sm_id, date_created, oof_shard) "+
@@ -81,7 +91,7 @@ func (r *PostgresRepo) InsertDataOrder(ctx context.Context, order model.Order) (
 }
 
 //insert into delivery...
-func (r *PostgresRepo) InsertDataDelivery(ctx context.Context, order model.Order) (int, error) {
+func (r *Store) InsertDataDelivery(ctx context.Context, order model.Order) (int, error) {
 	var id int
 	if err := r.db.QueryRowContext(ctx, "INSERT INTO delivery(name, phone, zip, city, address, region, email) "+
 		"VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id",
@@ -99,7 +109,7 @@ func (r *PostgresRepo) InsertDataDelivery(ctx context.Context, order model.Order
 }
 
 //insert into orders_delivery...
-func (r *PostgresRepo) InsertDataOrdersDelivery(ctx context.Context, order model.Order, id int) error {
+func (r *Store) InsertDataOrdersDelivery(ctx context.Context, order model.Order, id int) error {
 	if _, err := r.db.ExecContext(ctx, "INSERT INTO orders_delivery(order_id,delivery_id) "+
 		"VALUES ($1,$2)",
 		order.OrderUid,
@@ -110,7 +120,7 @@ func (r *PostgresRepo) InsertDataOrdersDelivery(ctx context.Context, order model
 }
 
 //insert into items...
-func (r *PostgresRepo) InsertDataItem(ctx context.Context, order model.Order) error {
+func (r *Store) InsertDataItem(ctx context.Context, order model.Order) error {
 	for _, v := range order.Items {
 		if _, err := r.db.ExecContext(ctx, "INSERT INTO item(chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status)"+
 			"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)",
@@ -133,7 +143,7 @@ func (r *PostgresRepo) InsertDataItem(ctx context.Context, order model.Order) er
 }
 
 //insert into payments...
-func (r *PostgresRepo) InsertDataPayments(ctx context.Context, order model.Order) error {
+func (r *Store) InsertDataPayments(ctx context.Context, order model.Order) error {
 	if _, err := r.db.ExecContext(ctx, "INSERT INTO payment(transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_free)"+
 		"VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
 		order.Payment.Transaction,
@@ -153,7 +163,7 @@ func (r *PostgresRepo) InsertDataPayments(ctx context.Context, order model.Order
 }
 
 //get data...
-func (r *PostgresRepo) GetDataById(ctx context.Context, id int) (*model.Order, error) {
+func (r *Store) GetDataById(ctx context.Context, id int) (*model.Order, error) {
 	var nM model.Order
 
 	//get order data...
@@ -192,7 +202,7 @@ func (r *PostgresRepo) GetDataById(ctx context.Context, id int) (*model.Order, e
 }
 
 //get data items...
-func (r *PostgresRepo) GetDataOrder(ctx context.Context, id int) (*model.Order, error) {
+func (r *Store) GetDataOrder(ctx context.Context, id int) (*model.Order, error) {
 	var order model.Order
 	if err := r.db.QueryRowContext(ctx, "SELECT o.order_uid,o.track_number,o.entry,o.locale, o.internal_signature,o.customer_id,o.delivery_service,o.shardkey,o.sm_id,o.date_created,o.oof_shard "+
 		"FROM orders o WHERE id = $1", id).Scan(
@@ -214,7 +224,7 @@ func (r *PostgresRepo) GetDataOrder(ctx context.Context, id int) (*model.Order, 
 }
 
 //get delivery data...
-func (r *PostgresRepo) GetDataDelivery(ctx context.Context, orderUid string) (delivery *model.Delivery, err error) {
+func (r *Store) GetDataDelivery(ctx context.Context, orderUid string) (delivery *model.Delivery, err error) {
 	delivery = &model.Delivery{}
 	idDelivery, err := r.GetDataOrdersDelivery(ctx, orderUid)
 	if err != nil {
@@ -236,7 +246,7 @@ func (r *PostgresRepo) GetDataDelivery(ctx context.Context, orderUid string) (de
 }
 
 //get data orders_delivery...
-func (r *PostgresRepo) GetDataOrdersDelivery(ctx context.Context, orderUid string) (idDelivery int, err error) {
+func (r *Store) GetDataOrdersDelivery(ctx context.Context, orderUid string) (idDelivery int, err error) {
 	if err = r.db.QueryRowContext(ctx, "SELECT od.delivery_id FROM orders_delivery od WHERE order_id = $1",
 		orderUid).Scan(&idDelivery); err != nil {
 		return 0, fmt.Errorf("GetDataOrdersDelivery: %v", err)
@@ -245,7 +255,7 @@ func (r *PostgresRepo) GetDataOrdersDelivery(ctx context.Context, orderUid strin
 }
 
 //get data items...
-func (r *PostgresRepo) GetDataItems(ctx context.Context, trackNumber string) (items []model.Item, err error) {
+func (r *Store) GetDataItems(ctx context.Context, trackNumber string) (items []model.Item, err error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT chrt_id,track_number,price,rid,name,sale,size,total_price,nm_id,brand,status FROM item i WHERE track_number = $1",
 		trackNumber)
 	if err != nil {
@@ -278,7 +288,7 @@ func (r *PostgresRepo) GetDataItems(ctx context.Context, trackNumber string) (it
 }
 
 //get data payment...
-func (r *PostgresRepo) GetDataPayment(ctx context.Context, transaction string) (payment *model.Payment, err error) {
+func (r *Store) GetDataPayment(ctx context.Context, transaction string) (payment *model.Payment, err error) {
 	payment = &model.Payment{}
 	if err = r.db.QueryRowContext(ctx, "SELECT p.transaction,p.request_id,p.currency,p.provider,p.amount,p.payment_dt,p.bank,p.delivery_cost,p.goods_total,p.custom_free "+
 		"FROM payment p WHERE p.transaction = $1", transaction,

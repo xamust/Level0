@@ -1,4 +1,4 @@
-version: "3.5"
+version: "3.6"
 services:
   nats_streaming:
     image: nats-streaming:latest
@@ -9,23 +9,29 @@ services:
       - my_network
 
   db:
-   build: "internal/app/store"
-   restart: "always"
+   build: "postgresql"
+   restart: always
    environment:
         POSTGRES_DB: "test_db"
         POSTGRES_USER: "testUser"
         POSTGRES_PASSWORD: "password"
- #   image: postgres:latest
- #   environment:
- #     POSTGRES_PASSWORD: password
    ports:
      - '127.0.0.1:5432:5432'
    networks:
     - my_network
 
- # client:
- #   build: './client/'
- #   network_mode: host
+  service:
+    restart: always
+    build: './service/'
+    environment:
+      db: "test_db"
+      password: "password"
+      user: "testUser"
+    command: ["./wait-for-postgres.sh", "db", "./build/service"]
+    ports:
+      - '127.0.0.1:8080:8080'
+    networks:
+      - my_network
 
 networks:
   my_network:

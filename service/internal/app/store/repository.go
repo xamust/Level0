@@ -1,8 +1,8 @@
 package store
 
 import (
-	"L0/internal/app/model"
 	"context"
+	"service/internal/app/model"
 )
 
 type Repository interface {
