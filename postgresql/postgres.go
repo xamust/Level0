@@ -151,3 +151,150 @@ func (r *PostgresRepo) InsertDataPayments(ctx context.Context, order model.Order
 	}
 	return nil
 }
+
+//get data...
+func (r *PostgresRepo) GetDataById(ctx context.Context, id int) (*model.Order, error) {
+	var nM model.Order
+
+	//get order data...
+	dataOrder, err := r.GetDataOrder(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	//insert data to model...
+	nM = *dataOrder
+
+	//get order data...
+	deliveryData, err := r.GetDataDelivery(ctx, nM.OrderUid)
+	if err != nil {
+		return nil, err
+	}
+	//insert data to model...
+	nM.Delivery = *deliveryData
+
+	//get payments data...
+	paymentData, err := r.GetDataPayment(ctx, nM.OrderUid)
+	if err != nil {
+		return nil, err
+	}
+	//insert data to model...
+	nM.Payment = *paymentData
+
+	//get items data...
+	itemsData, err := r.GetDataItems(ctx, nM.TrackNumber)
+	if err != nil {
+		return nil, err
+	}
+	//insert data to model...
+	nM.Items = itemsData
+
+	return &nM, nil
+}
+
+//get data items...
+func (r *PostgresRepo) GetDataOrder(ctx context.Context, id int) (*model.Order, error) {
+	var order model.Order
+	if err := r.db.QueryRowContext(ctx, "SELECT o.order_uid,o.track_number,o.entry,o.locale, o.internal_signature,o.customer_id,o.delivery_service,o.shardkey,o.sm_id,o.date_created,o.oof_shard "+
+		"FROM orders o WHERE id = $1", id).Scan(
+		&order.OrderUid,
+		&order.TrackNumber,
+		&order.Entry,
+		&order.Locale,
+		&order.InternalSignature,
+		&order.CustomerId,
+		&order.DeliveryService,
+		&order.Shardkey,
+		&order.SmId,
+		&order.DateCreated,
+		&order.OofShard,
+	); err != nil {
+		return nil, fmt.Errorf("GetDataOrder: %v", err)
+	}
+	return &order, nil
+}
+
+//get delivery data...
+func (r *PostgresRepo) GetDataDelivery(ctx context.Context, orderUid string) (delivery *model.Delivery, err error) {
+	delivery = &model.Delivery{}
+	idDelivery, err := r.GetDataOrdersDelivery(ctx, orderUid)
+	if err != nil {
+		return nil, err
+	}
+	if err = r.db.QueryRowContext(ctx, "SELECT d.name,d.phone,d.zip,d.city,d.address,d.region,d.email "+
+		"FROM delivery d WHERE id = $1", idDelivery).Scan(
+		&delivery.Name,
+		&delivery.Phone,
+		&delivery.Zip,
+		&delivery.City,
+		&delivery.Address,
+		&delivery.Region,
+		&delivery.Email,
+	); err != nil {
+		return nil, fmt.Errorf("GetDataDelivery: %v", err)
+	}
+	return delivery, nil
+}
+
+//get data orders_delivery...
+func (r *PostgresRepo) GetDataOrdersDelivery(ctx context.Context, orderUid string) (idDelivery int, err error) {
+	if err = r.db.QueryRowContext(ctx, "SELECT od.delivery_id FROM orders_delivery od WHERE order_id = $1",
+		orderUid).Scan(&idDelivery); err != nil {
+		return 0, fmt.Errorf("GetDataOrdersDelivery: %v", err)
+	}
+	return
+}
+
+//get data items...
+func (r *PostgresRepo) GetDataItems(ctx context.Context, trackNumber string) (items []model.Item, err error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT chrt_id,track_number,price,rid,name,sale,size,total_price,nm_id,brand,status FROM item i WHERE track_number = $1",
+		trackNumber)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var temp model.Item
+		if err = rows.Scan(
+			&temp.ChrtId,
+			&temp.TrackNumber,
+			&temp.Price,
+			&temp.Rid,
+			&temp.Name,
+			&temp.Sale,
+			&temp.Size,
+			&temp.TotalPrice,
+			&temp.NmId,
+			&temp.Brand,
+			&temp.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, temp)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return
+}
+
+//get data payment...
+func (r *PostgresRepo) GetDataPayment(ctx context.Context, transaction string) (payment *model.Payment, err error) {
+	payment = &model.Payment{}
+	if err = r.db.QueryRowContext(ctx, "SELECT p.transaction,p.request_id,p.currency,p.provider,p.amount,p.payment_dt,p.bank,p.delivery_cost,p.goods_total,p.custom_free "+
+		"FROM payment p WHERE p.transaction = $1", transaction,
+	).Scan(
+		&payment.Transaction,
+		&payment.RequestId,
+		&payment.Currency,
+		&payment.Provider,
+		&payment.Amount,
+		&payment.PaymentDt,
+		&payment.Bank,
+		&payment.DeliveryCost,
+		&payment.GoodsTotal,
+		&payment.CustomFree,
+	); err != nil {
+		return nil, fmt.Errorf("GetDataPayment: %v", err)
+	}
+	return
+}

@@ -125,8 +125,18 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
+
 	log.Println("Success conn to DB")
 	ctx := context.Background()
+
+	nM, err := pg.GetDataById(ctx, 1)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Println(testModel2)
+	fmt.Println(*nM)
+
 	if err = pg.InsertData(ctx, testModel2); err != nil {
 		log.Fatalln(err)
 	}
@@ -149,6 +159,7 @@ func main() {
 
 	time.Sleep(time.Second * 1)
 
+	nc.Close()
 	/*
 		// Connect to a server
 		//nc, _ := nats.Connect(nats.DefaultURL)
