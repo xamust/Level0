@@ -3,6 +3,7 @@ module L0
 go 1.18
 
 require (
+	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/lib/pq v1.10.6 // indirect
 	github.com/nats-io/nats.go v1.16.0 // indirect

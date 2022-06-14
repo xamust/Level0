@@ -9,7 +9,7 @@ services:
       - my_network
 
   db:
-   build: "./postgresql"
+   build: "internal/app/store"
    restart: "always"
    environment:
         POSTGRES_DB: "test_db"

@@ -1,0 +1,5 @@
+bind_addr = ":8080"
+log_level = "debug"
+
+[store]
+database_url = "dbname=test_db user=testUser password=password host=db port=5432 sslmode=disable"

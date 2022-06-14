@@ -1,8 +1,7 @@
 package main
 
 import (
-	"L0/model"
-	"L0/postgresql"
+	"L0/internal/app/model"
 	"context"
 	"fmt"
 	"github.com/nats-io/nats.go"

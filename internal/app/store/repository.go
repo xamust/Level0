@@ -1,7 +1,7 @@
-package postgresql
+package store
 
 import (
-	"L0/model"
+	"L0/internal/app/model"
 	"context"
 )
 
