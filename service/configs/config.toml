@@ -3,3 +3,7 @@ log_level = "debug"
 
 [store]
 database_url = "dbname=test_db user=testUser password=password host=db port=5432 sslmode=disable"
+
+[natsapp]
+nats_addr = "nats://nats_streaming:4222"
+nats_subs = "test"

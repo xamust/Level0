@@ -5,14 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 	"service/internal/app/model"
 )
 
 type Store struct {
 	config *Config
 	db     *sql.DB
-	logger *logrus.Logger
 }
 
 func New(config *Config) *Store {

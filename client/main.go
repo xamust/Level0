@@ -11,7 +11,7 @@ func main() {
 	//client()
 
 	// Connect to a server
-	//nc, _ := nats.Connect(nats.DefaultURL)
+	//nc, _ := natsapp.Connect(natsapp.DefaultURL)
 	nc, err := nats.Connect("nats://127.0.0.1:4223")
 	if err != nil {
 		log.Fatalln(err)
@@ -66,7 +66,7 @@ func main() {
 }
 
 func client() {
-	nc, err := nats.Connect("nats://127.0.0.1:8223", nats.Name("API PublishBytes Example"))
+	nc, err := nats.Connect("natsapp://127.0.0.1:8223", nats.Name("API PublishBytes Example"))
 	if err != nil {
 		log.Fatal(err)
 	}
