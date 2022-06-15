@@ -7,9 +7,8 @@ import (
 
 type NatsService struct {
 	config       *Config
-	nats         *nats.Conn
+	NatsConn     *nats.Conn
 	subscription *nats.Subscription
-	receivedMsg  chan model.Order
 }
 
 func New(config *Config) *NatsService {
@@ -18,31 +17,35 @@ func New(config *Config) *NatsService {
 	}
 }
 
-func (n *NatsService) Connect() (*NatsService, error) {
+func (n *NatsService) Connect() error {
 	nc, err := nats.Connect(n.config.NatsAddr)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	n.nats = nc
-	return &NatsService{nats: nc}, nil
+	n.NatsConn = nc
+	return nil
 }
 
 func (n *NatsService) Close() {
 	//close...
-	if n.nats != nil {
-		n.nats.Close()
+	if n.NatsConn != nil {
+		n.NatsConn.Close()
 	}
 	//unsubs...
 	if n.subscription != nil {
 		n.Unsubscribe()
 	}
 	//close ch...
-	close(n.receivedMsg)
+	//close(n.receivedMsg)
+}
+
+func (n *NatsService) Unsubscribe() error {
+	return n.subscription.Unsubscribe()
 }
 
 func (n *NatsService) ChannelSubscribe() (chan *nats.Msg, error) {
 	ch := make(chan *nats.Msg, 64)
-	sub, err := n.nats.ChanSubscribe(n.config.NatsSubs, ch)
+	sub, err := n.NatsConn.ChanSubscribe(n.config.NatsSubs, ch)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +54,7 @@ func (n *NatsService) ChannelSubscribe() (chan *nats.Msg, error) {
 }
 
 func (n *NatsService) JSONEncodedConn() (chan *model.Order, error) {
-	ec, err := nats.NewEncodedConn(n.nats, nats.JSON_ENCODER)
+	ec, err := nats.NewEncodedConn(n.NatsConn, nats.JSON_ENCODER)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +62,4 @@ func (n *NatsService) JSONEncodedConn() (chan *model.Order, error) {
 	recvCh := make(chan *model.Order)
 	ec.BindSendChan(n.config.NatsSubs, recvCh)
 	return recvCh, nil
-}
-
-func (n *NatsService) Unsubscribe() error {
-	return n.subscription.Unsubscribe()
 }

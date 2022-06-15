@@ -3,9 +3,9 @@ package service
 import (
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
 	"net/http"
-	"service/internal/app/model"
 	"service/internal/app/natsapp"
 	"service/internal/app/store"
 	"strconv"
@@ -40,30 +40,18 @@ func (s *Service) Start() error {
 	if err := s.configureNats(); err != nil {
 		s.logger.Fatalln(err)
 	}
-	s.logger.Info("Nats ready...")
+	s.logger.Info("Conn ready...")
 
-	_, err := s.nats.ChannelSubscribe()
-	if err != nil {
-		s.logger.Fatalln(err)
-	}
-	s.logger.Infof("Nats subs on %v...", s.config.NatsApp.NatsSubs)
-
-	recvCh, err := s.nats.JSONEncodedConn()
-	if err != nil {
-		s.logger.Fatalln(err)
-	}
-
-	go func(chan *model.Order) {
-		msg := <-recvCh
-		s.logger.Info(msg)
-		//	msg := <-ch
-		//	s.logger.Info(msg.Data)
-	}(recvCh)
-
-	if err = s.configureStore(); err != nil {
+	if err := s.configureStore(); err != nil {
 		s.logger.Fatalln(err)
 	}
 	s.logger.Info("Store ready...")
+
+	s.nats.NatsConn.Subscribe("test", func(m *nats.Msg) {
+		fmt.Printf("Received a message: %s\n", string(m.Data))
+	})
+
+	s.logger.Infof("Conn subs on %v...", s.config.NatsApp.NatsSubs)
 
 	s.logger.Info(fmt.Sprintf("Starting server (bind on %v)...", s.config.BindAddr))
 	return http.ListenAndServe(s.config.BindAddr, s.mux)
@@ -93,7 +81,6 @@ func (s *Service) configureNats() error {
 		return err
 	}
 	s.nats = newNats
-
 	return nil
 }
 

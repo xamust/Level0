@@ -142,29 +142,29 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	ec, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
-	defer nc.Close()
-	defer ec.Close()
-	fmt.Println(nc.IsConnected())
-	sendCh := make(chan *Order)
-	ec.BindSendChan("test", sendCh)
-	time.Sleep(time.Second * 5)
-	sendCh <- testModel
-	time.Sleep(time.Second * 5)
-	sendCh <- testModel2
+	//ec, err := nats.NewEncodedConn(nc, nats.JSON_ENCODER)
+	//defer nc.Close()
+	//defer ec.Close()
+	//fmt.Println(nc.IsConnected())
+	//sendCh := make(chan *Order)
+	//ec.BindSendChan("test", sendCh)
+	//time.Sleep(time.Second * 5)
+	//sendCh <- testModel
+	//time.Sleep(time.Second * 5)
+	//sendCh <- testModel2
 
 	// Simple Async Subscriber
-	//nc.Subscribe("foo", func(m *nats.Msg) {
-	//	fmt.Printf("Received a message: %s\n", string(m.Data))
-	//})
-	//fmt.Println(nc.NumSubscriptions())
+	nc.Subscribe("foo", func(m *nats.Msg) {
+		fmt.Printf("Received a message: %s\n", string(m.Data))
+	})
+	fmt.Println(nc.NumSubscriptions())
 
 	//client()
 	// Simple Publisher
 
-	//nc.Publish("test", []byte("Hello World"))
-	//
-	//time.Sleep(time.Second * 1)
+	nc.Publish("test", []byte("Hello World"))
+
+	time.Sleep(time.Second * 1)
 
 	/*
 		// Connect to a server
