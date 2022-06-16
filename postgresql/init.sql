@@ -1,4 +1,4 @@
-DROP TABLE if exists orders,delivery,item,payment,orders_delivery;
+DROP TABLE if exists orders,delivery,item,payment,orders_delivery,incorrect_messages;
 
 CREATE TABLE orders(
                        id  serial primary key,
@@ -58,4 +58,9 @@ CREATE TABLE item (
 CREATE TABLE orders_delivery (
                     order_id varchar(32) references orders(order_uid),
                     delivery_id integer references delivery(id)
+);
+
+CREATE TABLE incorrect_messages (
+                    id serial primary key,
+                    message text
 );

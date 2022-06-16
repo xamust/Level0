@@ -7,3 +7,6 @@ database_url = "dbname=test_db user=testUser password=password host=db port=5432
 [natsapp]
 nats_addr = "nats://nats_streaming:4222"
 nats_subs = "test"
+
+[cashdata]
+count_of_cash = 3

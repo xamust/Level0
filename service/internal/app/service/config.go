@@ -1,6 +1,7 @@
 package service
 
 import (
+	"service/internal/app/cashdata"
 	"service/internal/app/natsapp"
 	"service/internal/app/store"
 )
@@ -10,6 +11,7 @@ type Config struct {
 	LogLevel string `toml:"log_level"`
 	Store    *store.Config
 	NatsApp  *natsapp.Config
+	CashData *cashdata.Config
 }
 
 func NewConfig() *Config {

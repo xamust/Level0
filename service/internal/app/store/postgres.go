@@ -19,15 +19,18 @@ func New(config *Config) *Store {
 	}
 }
 
-//new postgres...
+//new postgres ...
 func (r *Store) Open() error {
+	//open db...
 	db, err := sql.Open("postgres", r.config.DBUrl)
 	if err != nil {
 		return fmt.Errorf("Open postgres: %v", err)
 	}
+	//ping db...
 	if err = db.Ping(); err != nil {
 		return fmt.Errorf("Ping postgres: %v", err)
 	}
+	//set to struct...
 	r.db = db
 	return nil
 }
@@ -38,31 +41,31 @@ func (r *Store) Close() {
 }
 
 //insert data...
-func (r *Store) InsertData(ctx context.Context, order model.Order) error {
+func (r *Store) InsertData(ctx context.Context, order model.Order) (int, error) {
 
-	_, err := r.InsertDataOrder(ctx, order)
+	id, err := r.InsertDataOrder(ctx, order)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	idDelivery, err := r.InsertDataDelivery(ctx, order)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	if err = r.InsertDataOrdersDelivery(ctx, order, idDelivery); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err = r.InsertDataItem(ctx, order); err != nil {
-		return err
+		return 0, err
 	}
 
 	if err = r.InsertDataPayments(ctx, order); err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return id, nil
 }
 
 //insert into order...
@@ -305,4 +308,26 @@ func (r *Store) GetDataPayment(ctx context.Context, transaction string) (payment
 		return nil, fmt.Errorf("GetDataPayment: %v", err)
 	}
 	return
+}
+
+//get last id order from db, for cash restore...
+func (r *Store) GetLastDataId(ctx context.Context) (int, error) {
+	//SELECT id FROM orders ORDER BY id DESC LIMIT 1
+	//SELECT MAX(id) FROM orders
+	var id int
+	if err := r.db.QueryRowContext(ctx, "SELECT id FROM orders ORDER BY id DESC LIMIT 1").Scan(&id); err != nil {
+		return 0, fmt.Errorf("GetLastDataId: %v", err)
+	}
+	return id, nil
+}
+
+//insert incorrect data to table...
+func (r *Store) InsertIncorrectData(ctx context.Context, message interface{}) error {
+	if err := r.db.QueryRowContext(ctx, "INSERT INTO incorrect_messages(message)"+
+		"VALUES ($1)",
+		message); err != nil {
+		return fmt.Errorf("InsertIncorrectData: %v", err)
+	}
+	return nil
+	return nil
 }
