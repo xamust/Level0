@@ -9,10 +9,10 @@ CREATE TABLE orders(
                        internal_signature varchar(32),
                        customer_id varchar(32),
                        delivery_service varchar(32),
-                       shardkey integer,
+                       shardkey varchar(32),
                        sm_id integer,
                        date_created varchar(32),
-                       oof_shard integer
+                       oof_shard varchar(32)
 );
 
 CREATE TABLE delivery (

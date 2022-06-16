@@ -1,11 +1,14 @@
 package service
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"service/internal/app/model"
 	"service/internal/app/natsapp"
 	"service/internal/app/store"
 	"strconv"
@@ -46,12 +49,20 @@ func (s *Service) Start() error {
 		s.logger.Fatalln(err)
 	}
 	s.logger.Info("Store ready...")
+	ctx := context.Background()
+	s.nats.NatsConn.Subscribe(s.config.NatsApp.NatsSubs, func(m *nats.Msg) {
+		var mod model.Order
 
-	s.nats.NatsConn.Subscribe("test", func(m *nats.Msg) {
-		fmt.Printf("Received a message: %s\n", string(m.Data))
+		if err := json.Unmarshal(m.Data, &mod); err != nil {
+			s.logger.Errorf("Unmarshal: %v", err)
+		}
+		if err := s.store.InsertData(ctx, mod); err != nil {
+			//not error, because service always restart....
+			s.logger.Errorf("Insert data: %v", err)
+		}
+		s.logger.Info(mod)
 	})
-
-	s.logger.Infof("Conn subs on %v...", s.config.NatsApp.NatsSubs)
+	s.logger.Infof("Nats subs on %v...", s.config.NatsApp.NatsSubs)
 
 	s.logger.Info(fmt.Sprintf("Starting server (bind on %v)...", s.config.BindAddr))
 	return http.ListenAndServe(s.config.BindAddr, s.mux)

@@ -2,4 +2,12 @@ package service
 
 import "service/internal/app/model"
 
-type main map[int]*model.Order
+type mainCashMap map[int]*model.Order
+
+func SetCash(order model.Order) {
+
+}
+
+func GetCash() mainCashMap {
+	return mainCashMap{}
+}

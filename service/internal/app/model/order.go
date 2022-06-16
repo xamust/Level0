@@ -11,10 +11,10 @@ type Order struct {
 	InternalSignature string `json:"internal_signature"`
 	CustomerId        string `json:"customer_id"`
 	DeliveryService   string `json:"delivery_service"`
-	Shardkey          int    `json:"shardkey"`
+	Shardkey          string `json:"shardkey"`
 	SmId              int    `json:"sm_id"`
 	DateCreated       string `json:"date_created"`
-	OofShard          int    `json:"oof_shard"`
+	OofShard          string `json:"oof_shard"`
 }
 
 type Delivery struct {

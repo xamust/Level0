@@ -20,7 +20,7 @@ services:
     - my_network
 
   service:
-    #restart: always
+    restart: always
     build: './service/'
     environment:
       db: "test_db"
