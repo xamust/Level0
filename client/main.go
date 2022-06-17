@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/nats-io/nats.go"
 	"log"
-	"time"
 )
 
 var testModel = &Order{
@@ -214,26 +212,6 @@ var testModel4 = &Order{
 
 func main() {
 
-	//pg, err := postgresql.New("dbname=test_db user=testUser password=password host=localhost port=5432 sslmode=disable")
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//
-	//log.Println("Success conn to DB")
-	//ctx := context.Background()
-	//
-	//nM, err := pg.GetDataById(ctx, 1)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
-	//
-	//fmt.Println(testModel2)
-	//fmt.Println(*nM)
-	//
-	//if err = pg.InsertData(ctx, testModel2); err != nil {
-	//	log.Fatalln(err)
-	//}
-
 	nc, err := nats.Connect("nats://127.0.0.1:4223")
 	if err != nil {
 		log.Fatal(err)
@@ -245,89 +223,6 @@ func main() {
 	ec.Publish("test", testModel3)
 	ec.Publish("test", "{{{test}}}")
 	ec.Publish("test", testModel4)
-	//defer nc.Close()
-	//defer ec.Close()
-	//fmt.Println(nc.IsConnected())
-	//sendCh := make(chan *Order)
-	//ec.BindSendChan("test", sendCh)
-	//time.Sleep(time.Second * 5)
-	//sendCh <- testModel
-	//time.Sleep(time.Second * 5)
-	//sendCh <- testModel2
-
-	// Simple Async Subscriber
-	nc.Subscribe("foo", func(m *nats.Msg) {
-		fmt.Printf("Received a message: %s\n", string(m.Data))
-	})
-	fmt.Println(nc.NumSubscriptions())
-
-	//client()
-	// Simple Publisher
-
-	//nc.Publish("test", []byte("Hello World"))
-
-	time.Sleep(time.Second * 1)
-
-	/*
-		// Connect to a server
-		//nc, _ := natsapp.Connect(natsapp.DefaultURL)
-		nc, err := natsapp.Connect("natsapp://127.0.0.1:4223")
-		if err != nil {
-			log.Fatalln(err)
-		}
-		// Simple Publisher
-		nc.Publish("foo", []byte("Hello World"))
-		/*
-			// Simple Async Subscriber
-			nc.Subscribe("foo", func(m *natsapp.Msg) {
-				fmt.Printf("Received a message: %s\n", string(m.Data))
-			})
-
-			// Responding to a request message
-			nc.Subscribe("request", func(m *natsapp.Msg) {
-				m.Respond([]byte("answer is 42"))
-			})
-
-			// Simple Sync Subscriber
-			sub, err := nc.SubscribeSync("foo")
-			m, err := sub.NextMsg(natsapp.DefaultDrainTimeout)
-
-			// Channel Subscriber
-			ch := make(chan *natsapp.Msg, 64)
-			sub, err := nc.ChanSubscribe("foo", ch)
-			msg := <- ch
-
-			// Unsubscribe
-			sub.Unsubscribe()
-
-			// Drain
-			sub.Drain()
-
-			// Requests
-			msg, err := nc.Request("help", []byte("help me"), 10*time.Millisecond)
-
-			// Replies
-			nc.Subscribe("help", func(m *natsapp.Msg) {
-				nc.Publish(m.Reply, []byte("I can help!"))
-			})
-
-			// Drain connection (Preferred for responders)
-			// Close() not needed if this is called.
-			nc.Drain()
-
-			// Close connection
-			nc.Close()
-	*/
-}
-
-func client() {
-	nc, err := nats.Connect("natsapp://127.0.0.1:8223", nats.Name("API PublishBytes Example"))
-	if err != nil {
-		log.Fatal(err)
-	}
 	defer nc.Close()
-
-	if err := nc.Publish("updates", []byte("All is Well")); err != nil {
-		log.Fatal(err)
-	}
+	defer ec.Close()
 }
